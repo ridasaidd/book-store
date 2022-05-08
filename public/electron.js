@@ -2,67 +2,34 @@ const electron = require("electron");
 const path = require("path");
 const app = electron.app;
 
-const Realm = require("realm");
-
 const BrowserWindow = electron.BrowserWindow;
 let mainWindow;
 function createWindow() {
     // Create the browser window.
     mainWindow = new BrowserWindow({
-        width: 1024,
-        height: 600,
+        width: 2048,
+        height: 800,
         webPreferences: { nodeIntegration: true, contextIsolation: false },
     });
     // and load the index.html of the app.
-    console.log(__dirname);
     mainWindow.loadFile(path.join(__dirname, "../build/index.html"));
+
+	// Open developer tools on startup. 
+	mainWindow.webContents.openDevTools();
 }
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
-  app.commandLine.appendSwitch('trace-warnings');
-
-    const UserSchema = {
-        name: 'User',
-        properties: {
-            _id: 'int',
-            username: 'string',
-            password: 'string'
-        },
-        primaryKey: '_id'
-    }
-
-    const realm = await Realm.open({
-        schema: [UserSchema],
-        path: './myrealm/data'
-    })
-
-    electron.ipcMain.on('authentication', async (event, response) => {
-      /*
-      let user;
-      realm.write(() => {
-        user = realm.create('User', {
-          _id: realm.objects('User').sorted('_id').length + 1,
-          username: response.username,
-          password: response.password
-        })
-      });
-      */
-      const user = realm.objects('User').find(u => u.username == response.username && u.password == response.password);
-      console.log(user)
-      event.reply('authentication-reply', `users table => ${user}`);
-    });
-
-    createWindow();
-
-    app.on("activate", function () {
-        // On macOS it's common to re-create a window in the app when the
-        // dock icon is clicked and there are no other windows open.
-        if (BrowserWindow.getAllWindows().length === 0) {
-          createWindow();
-        }
-    });
+  createWindow();
+  
+  app.on("activate", function () {
+      // On macOS it's common to re-create a window in the app when the
+      // dock icon is clicked and there are no other windows open.
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow ();
+      }
+  });
 });
 
 // Quit when all windows are closed, except on macOS.
@@ -90,4 +57,6 @@ app.on("web-contents-created", (event, contents) => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
-
+app.whenReady().then(() => {
+	require('./events/UserEvents');
+});
